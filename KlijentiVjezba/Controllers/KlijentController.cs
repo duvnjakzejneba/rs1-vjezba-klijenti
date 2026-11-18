@@ -14,9 +14,7 @@ namespace KlijentiVjezba.Controllers
         {
             return new KlijentResponse()
             {
-                Id = k.Id,
                 Naziv = k.Naziv,
-                DatumKreiranja = k.DatumKreiranja,
                 Email = k.Email,
                 Grad = k.Grad
             };
@@ -26,22 +24,24 @@ namespace KlijentiVjezba.Controllers
         public async Task<List<KlijentResponse>> GetAll(CancellationToken ct)
         {
             List<Klijent> klijenti = await db.Klijenti.ToListAsync(ct);
-            return klijenti.Select(Mapiraj).ToList(); 
+            return klijenti.Select(Mapiraj).ToList();
         }
 
         [HttpGet("{id:int}")]
-        public async Task<KlijentResponse> GetById(int id, CancellationToken ct)
+        public async Task<ActionResult<KlijentResponse>> GetById(int id, CancellationToken ct)
         {
-            Klijent klijent = await db.Klijenti.FirstOrDefaultAsync(c => c.Id == id, ct);
+            Klijent? klijent = await db.Klijenti.FirstOrDefaultAsync(c => c.Id == id, ct);
+            if (klijent == null)
+                return NotFound();
             return Mapiraj(klijent);
         }
-         
+
         [HttpPost]
         public async Task<ActionResult<KlijentResponse>> AddNew(KlijentDodajRequest k, CancellationToken ct)
         {
             Klijent klijent = new Klijent
             {
-                DatumKreiranja = DateOnly.FromDateTime(DateTime.Now), 
+                DatumKreiranja = DateOnly.FromDateTime(DateTime.Now),
                 Email = k.Email,
                 Naziv = k.Naziv,
                 Grad = k.Grad
@@ -50,7 +50,22 @@ namespace KlijentiVjezba.Controllers
             db.Klijenti.Add(klijent);
             await db.SaveChangesAsync(ct);
 
-            return Ok(Mapiraj(klijent)); 
+            return Ok(Mapiraj(klijent));
+        }
+
+        [HttpDelete("{id:int}")]
+
+        public async Task<ActionResult<KlijentResponse>> DeleteUser(int id, CancellationToken ct)
+        {
+            Klijent? klijent = await db.Klijenti.FirstOrDefaultAsync(c => c.Id == id, ct);
+
+            if (klijent == null)
+                return NotFound();
+
+            db.Klijenti.Remove(klijent);
+            await db.SaveChangesAsync(ct);
+
+            return Ok();
         }
     }
 }
